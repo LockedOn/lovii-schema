@@ -42,8 +42,8 @@
 (defn countdown
 	[]
 	(let [a (atom 0)]
-		(fn [_] 
-			(swap! a dec))))
+		(fn [part] 
+			(d/tempid part (swap! a dec)))))
 
 (deftest schema-test
   (testing "Parse Schema"
@@ -67,7 +67,7 @@
 			 :db/fulltext false,
 			 :db/cardinality :db.cardinality/one,
 			 :db/doc "",
-			 :db/id -3,
+			 :db/id #db/id[:db.part/db -3],
 			 :db/ident :schema/variant}
     	    {:db/index false,
     	     :db/unique :db.unique/identity,
@@ -77,9 +77,9 @@
     	     :db/fulltext false,
     	     :db/cardinality :db.cardinality/one,
     	     :db/doc "",
-    	     :db/id -4,
+    	     :db/id #db/id[:db.part/db -4],
     	     :db/ident :testns/uuid}
-    	    {:db/id -5,
+    	    {:db/id #db/id[:db.part/db -5],
     	     :db.install/_attribute :db.part/db,
     	     :db/doc "",
     	     :db/valueType :db.type/double,
@@ -96,7 +96,7 @@
     	     :db/fulltext false, 
     	     :db/cardinality :db.cardinality/one, 
     	     :db/doc "", 
-    	     :db/id -6, 
+    	     :db/id #db/id[:db.part/db -6], 
     	     :db/ident :testns/second}
     	    {:db/index false,
     	     :db/unique :db.unique/identity,
@@ -106,9 +106,9 @@
     	     :db/fulltext false,
     	     :db/cardinality :db.cardinality/one,
     	     :db/doc "",
-    	     :db/id -7,
+    	     :db/id #db/id[:db.part/db -7],
     	     :db/ident :secondns/uuid}
-    	    {:db/id -8,
+    	    {:db/id #db/id[:db.part/db -8],
     	     :db.install/_attribute :db.part/db,
     	     :db/doc "",
     	     :db/valueType :db.type/double,
@@ -117,20 +117,20 @@
     	     :db/noHistory false,
     	     :db/cardinality :db.cardinality/many,
     	     :db/ident :secondns/counter}
-    	    {:db/id -1,
+    	    {:db/id #db/id[:db.part/user -1],
     	     :db/ident :testns}
-    	    {:db/id -2,
+    	    {:db/id #db/id[:db.part/user -2],
     	     :db/ident :secondns}])))
 	(testing "Create Datomic DB"
 	    (is (:conn (create-connection lo-schema))))
 	(testing "Create Datomic DB"
 	    (is (= (lodatomic/data->datoms lo-schema (countdown) test-data)
-	    	   [{:db/id -1,
+	    	   [{:db/id #db/id[:db.part/user -1],
 	    	   	 :schema/variant :testns,
 	    	     :testns/uuid #uuid "297d5fb9-13b9-47f9-a4d6-30ce7cdcec19",
 	    	     :testns/counter 5.0}
-	    	    {:testns/_second -1,
-	    	   	 :db/id -2,
+	    	    {:testns/_second #db/id[:db.part/user -1],
+	    	   	 :db/id #db/id[:db.part/user -2],
 	    	     :schema/variant :secondns,
 	    	     :secondns/uuid #uuid "123e4567-e89b-12d3-a456-426655440800",
 	    	     :secondns/counter [3.1 9.0]}])))

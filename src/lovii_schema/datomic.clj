@@ -20,17 +20,14 @@
 	  		  	 :db/ident k}))))
 
 (defn- schema->datomic-types
-	[v]
+	[v type-map]
 	(let [t (get v :type nil)]
 		(if (contains? #{:keyword :string :boolean :long :bigint :float :double :bigdec :ref :instant :uuid :uri :bytes} t)
 			v
-			(assoc v :type (get {:string-large :string
-								 :int :long 
-								 :decimal :double 
-								 :date :instant 
-								 :date-time :instant 
-								 :enum :ref
-								 :edn :string} 
+			(assoc v :type (get (merge {:date :instant 
+										:date-time :instant 
+										:enum :ref} 
+								 	   type-map) 
 								t)))))
 
 (defn- datomic-fulltext
@@ -94,10 +91,13 @@
 		 (assoc d :db/valueType)))
 
 (defn schema
-	[schema tempid]
-	(let [flat-schema (flatten-schema schema)
+	([raw-schema tempid]
+	(schema raw-schema tempid {}))
+
+	([raw-schema tempid type-map]
+	(let [flat-schema (flatten-schema raw-schema)
 		  db (map (fn [[k v]]
-					 (let [m (schema->datomic-types (assoc v :attribute k))]
+					 (let [m (schema->datomic-types (assoc v :attribute k) type-map)]
 					 	(-> (datomic-base tempid)
 							(datomic-doc m)
 							(datomic-type m)
@@ -109,19 +109,19 @@
 							(datomic-cadinality m)
 							(datomic-ident m)))) flat-schema)
 		  idents (datomic-enum-values flat-schema tempid)]
-		(vec (concat db idents))))
+		(vec (concat db idents)))))
 
 (declare data->datoms-flat)
 
 (defn- datom-values
-	[flat-schema tempid attr value parent-id]
+	[flat-schema tempid attr value parent-id type-map]
 	(let [descriptor (get flat-schema attr)
 		  type (:type descriptor)
-		  d-type (:type (schema->datomic-types descriptor))]
+		  d-type (:type (schema->datomic-types descriptor type-map))]
 		(cond (and (= (:cardinality descriptor :has-many)) 
 				   (vector? value))
 			  (->> value 
-			  	   (mapv #(datom-values flat-schema tempid attr % parent-id))
+			  	   (mapv #(datom-values flat-schema tempid attr % parent-id type-map))
 			  	   (reduce (fn [[res parts] [v* more-parts]]
 			  	   				[(if v*
 			  	   					 (vec (concat res [v*]))
@@ -133,18 +133,18 @@
 
 			  (and (map? value) 
 			  	   (= type :ref))
-			  [nil (data->datoms-flat flat-schema tempid value {(keyword (namespace attr) (str "_" (name attr))) parent-id})]
+			  [nil (data->datoms-flat flat-schema tempid value {(keyword (namespace attr) (str "_" (name attr))) parent-id} type-map)]
 
 			  :else 
 			  [value []])))
 
 (defn- data->datoms-flat 
-	[flat-schema tempid data base]
+	[flat-schema tempid data base type-map]
 	(if (vector? data)
 		(mapv #(data->datoms-flat flat-schema % base) data)
 		(let [parent-id (tempid :db.part/user)
 			 [cleaned parts] (reduce (fn [[res m-parts] [a v]] 
-		  								(let [[v* more-parts] (datom-values flat-schema tempid a v parent-id)]
+		  								(let [[v* more-parts] (datom-values flat-schema tempid a v parent-id type-map)]
 			  								[(if v* 
 			  									 (assoc res a v*)
 			  									 res) 
@@ -160,5 +160,10 @@
 				(vec)))))
 
 (defn data->datoms 
-	[schema tempid data] 
-	(data->datoms-flat (flatten-schema schema) tempid data {}))
+	([schema tempid data]
+	(data->datoms schema tempid data {}))
+
+	([schema tempid data type-map] 
+	(data->datoms-flat (flatten-schema schema) tempid data {} type-map)))
+
+[schema tempid data type-map] 

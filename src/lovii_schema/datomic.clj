@@ -165,5 +165,3 @@
 
 	([schema tempid data type-map] 
 	(data->datoms-flat (flatten-schema schema) tempid data {} type-map)))
-
-[schema tempid data type-map] 

@@ -1,5 +1,7 @@
 # LOVII Schema
 
+[![Build Status](https://travis-ci.org/LockedOn/lovii-schema.svg?branch=master)](https://travis-ci.org/LockedOn/lovii-schema)
+
 Describe & design your application using data. Version control your data structures.
 A fast data driven way to design complex entity relationships for graph databases. Designed to keep as much relevant data together..
 

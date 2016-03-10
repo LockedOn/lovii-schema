@@ -20,6 +20,10 @@
     	 :schema-data schema-data
     	 :tx @(d/transact conn schema-data)})))
 
+(def enum-test-data
+    {:enumns {:schema/variant :enumns 
+              :option {:type :enum :values {:one "One" :two "Two" :staticns/three "Three"} :default-value :one}}})
+
 (def test-schema 
 	{:testns {:schema/variant :testns
 		   	  :uuid {:type :uuid :unique :identity :required true}
@@ -48,15 +52,25 @@
 (deftest schema-test
   (testing "Parse Schema"
     (is (= lo-schema 
-    	   [{:schema/variant :testns, 
-    	   	 :testns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}, 
-    	   	 :testns/counter {:type :double, :required true, :cardinality :one}, 
-    	   	 :testns/second {:type :ref, :cardinality :one :variants [:secondns]}, 
-    	   	 :schema/abstract :testns}
-    	   	{:schema/variant :secondns, 
-    	   	 :secondns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}, 
-    	   	 :secondns/counter {:type :double, :required true, :cardinality :has-many}, 
-    	   	 :schema/abstract :secondns}])))
+           [{:schema/variant :testns, 
+             :testns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}, 
+             :testns/counter {:type :double, :required true, :cardinality :one}, 
+             :testns/second {:type :ref, :cardinality :one :variants [:secondns]}, 
+             :schema/abstract :testns}
+            {:schema/variant :secondns, 
+             :secondns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}, 
+             :secondns/counter {:type :double, :required true, :cardinality :has-many}, 
+             :schema/abstract :secondns}])))
+  (testing "Parse Expand Namespace"
+    (is (= (loschema/parse-schema enum-test-data) 
+    	   [{:schema/variant :enumns
+             :schema/abstract :enumns 
+             :enumns/option {:type :enum 
+                             :values {:enumns/one "One" 
+                                      :enumns/two "Two" 
+                                      :staticns/three "Three"} 
+                             :default-value :enumns/one 
+                             :cardinality :one}}])))
   (testing "Datomic Schema"
     (is (= (lodatomic/schema lo-schema (countdown))
     	   [{:db/index false,

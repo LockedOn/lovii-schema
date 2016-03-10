@@ -21,6 +21,14 @@
 				 (assoc v :values))
 			v)))
 
+(defn- expand-default-values
+	[n]
+	(fn [v]
+		(if (keyword? (:default-value v))
+			(->> (add-namespace (:default-value v) n) 
+				 (assoc v :default-value))
+			v)))
+
 (defn- add-namespace-required
 	[v n]
 	(cond (vector? v)
@@ -86,7 +94,7 @@
 		(when-some [n (:schema/abstract m)]
 				(some-> m 
 						(add-namespace-map n)
-						(apply-fns [(expand-attribute-enums n) (expand-attribute-required n)])
+						(apply-fns [(expand-default-values n) (expand-attribute-enums n) (expand-attribute-required n)])
 						(apply-fns [cardinality-one])
 						(apply-fns fns)))))
 

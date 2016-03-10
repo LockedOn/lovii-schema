@@ -5,6 +5,10 @@
 Describe & design your application using data. Version control your data structures.
 A fast data driven way to design complex entity relationships for graph databases. Designed to keep as much relevant data together..
 
+Install from Clojars
+
+[![Clojars Project](https://img.shields.io/clojars/v/lockedon/lovii-schema.svg)](https://clojars.org/lockedon/lovii-schema)
+
 ### Example EDN
 
 ```edn

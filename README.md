@@ -55,19 +55,9 @@ The first level shows all entity namespaces available in your structure. Each en
 
 All datomic types are supported without the namespace and we have mapped some of them to the following list which make the schema easier to reason.
 
-* uuid
 * enum -> ref (db.ident)
-* ref
-* string
-* int -> long
-* long
-* float
-* double
-* decimal -> bigdec
-* boolean
 * date-time -> instant
 * date -> instant
-* instant
 
 ### Expanded Version
 

@@ -1,7 +1,7 @@
 (ns lovii-schema.data
 	(:require [lovii-schema.util :refer [flatten-schema]]))
 
-(declare clean-data)
+(declare clean-data-flat)
 
 (defn- clean-value 
 	[flat-schema attr value]
@@ -28,12 +28,15 @@
 
 			  (and (map? value) 
 			  	   (= type :ref))
-			  (clean-data flat-schema value))))
+			  (clean-data-flat flat-schema value))))
+
+(defn clean-data-flat
+	[flat-schema data]
+	(reduce (fn [res [attr value]] 
+				(assoc res attr (clean-value flat-schema attr value)))
+			{} 
+			data))
 
 (defn clean-data
 	[schema data]
-	(let [flat-schema (flatten-schema schema)]
-		(reduce (fn [res [attr value]] 
-					(assoc res attr (clean-value flat-schema attr value)))
-				{} 
-				data)))
+	(clean-data-flat (flatten-schema schema) data))

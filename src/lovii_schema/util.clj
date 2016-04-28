@@ -3,7 +3,7 @@
 (defn- all-variants
   [schema]
   (reduce (fn [res m]
-            (conj res (:schema/variant m)))
+            (conj res (-> m :schema/variant :variant)))
           [] schema))
 
 (def flatten-schema

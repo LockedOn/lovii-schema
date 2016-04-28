@@ -62,28 +62,6 @@
                     {} m*))
           m fns))
 
-(defn- all-variants
-  [schema]
-  (reduce (fn [res m]
-            (conj res (:schema/variant m)))
-          [] schema))
-
-(defn flatten-schema
-  [schema]
-  (->> schema
-       (reduce (fn [res m]
-                 (-> m
-                     (dissoc :schema/variant)
-                     (dissoc :schema/abstract)
-                     (->> (merge res))))
-               {})
-       (merge {:schema/variant {:type :enum
-                                :cardinality :one
-                                :values (reduce (fn [res ke]
-                                                  (assoc res ke (str ke)))
-                                                {}
-                                                (all-variants schema))}})))
-
 (defn- cardinality-one
   [v]
   (assoc v :cardinality (get v :cardinality :one)))
@@ -91,27 +69,45 @@
 (defn- expand-variant-keys
   [lo-schema fns]
   (fn [m]
-    (when-some [n (:schema/abstract m)]
+    (when-some [n (-> m :schema/abstract :abstract)]
       (some-> m
               (add-namespace-map n)
               (apply-fns [(expand-default-values n) (expand-attribute-enums n) (expand-attribute-required n)])
               (apply-fns [cardinality-one])
               (apply-fns fns)))))
 
+(defn- expand-schema-variant
+	[m]
+	(let [variant (-> m :schema/variant)
+		  abstract (-> m :schema/abstract)
+		  variant-map (if (keyword? variant)
+		  				  {:schema/variant {:variant variant}}
+		  				  {})
+		  abstract-map (if (keyword? abstract)
+		  					{:schema/abstract {:abstract abstract}}
+		  					{})]
+		  (merge m variant-map abstract-map)))
+
 (defn parse-schema
   [lo-schema & fns]
-  (-> (reduce (fn [res [_ sch]]
+  (->> lo-schema
+  	(map (fn [[k v]]
+  			[k (if (vector? v)
+  				  (mapv expand-schema-variant v)
+  				  (expand-schema-variant v))]))
+  	(reduce (fn [res [_ sch]]
                 (when res
                   (cond (vector? sch)
-                        (when-some [abstract (first (filter #(and (:schema/abstract %)) sch))]
-                          (some->> (filter #(and (:schema/variant %)) sch)
+                        (when-some [abstract (first (filter #(-> % :schema/abstract :abstract) sch))]
+                          (some->> (filter #(-> % :schema/variant :variant) sch)
                                    (map #(merge abstract %))
                                    (map (expand-variant-keys lo-schema fns))
                                    (concat res)))
 
                         (map? sch)
-                        (some->> (merge sch {:schema/abstract (:schema/variant sch)})
-                                 ((expand-variant-keys lo-schema fns))
-                                 (conj res)))))
-              [] lo-schema)
+                        (let [variant (-> sch :schema/variant :variant)]
+	                        (some->> (merge sch {:schema/abstract {:abstract variant}})
+	                                 ((expand-variant-keys lo-schema fns))
+	                                 (conj res))))))
+              [])
       (vec)))

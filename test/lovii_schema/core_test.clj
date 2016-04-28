@@ -25,11 +25,11 @@
             :option {:type :enum :values {:one "One" :two "Two" :staticns/three "Three"} :default-value :one}}})
 
 (def test-schema
-  {:testns {:schema/variant :testns
+  {:testns {:schema/variant {:variant :testns}
             :uuid {:type :uuid :unique :identity :required true}
             :counter {:type :double :required true}
             :second {:type :ref :variants [:secondns]}}
-   :secondns {:schema/variant :secondns
+   :secondns {:schema/variant {:variant :secondns}
               :uuid {:type :uuid :unique :identity :required true}
               :counter {:type :double :required true :cardinality :has-many}}})
 
@@ -52,19 +52,19 @@
 (deftest schema-test
   (testing "Parse Schema"
     (is (= lo-schema
-           [{:schema/variant :testns
+           [{:schema/variant {:variant :testns}
              :testns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}
              :testns/counter {:type :double, :required true, :cardinality :one}
              :testns/second {:type :ref, :cardinality :one :variants [:secondns]}
-             :schema/abstract :testns}
-            {:schema/variant :secondns
+             :schema/abstract {:abstract :testns}}
+            {:schema/variant {:variant :secondns}
              :secondns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}
              :secondns/counter {:type :double, :required true, :cardinality :has-many}
-             :schema/abstract :secondns}])))
+             :schema/abstract {:abstract :secondns}}])))
   (testing "Parse Expand Namespace"
     (is (= (loschema/parse-schema enum-test-data)
-           [{:schema/variant :enumns
-             :schema/abstract :enumns
+           [{:schema/variant {:variant :enumns}
+             :schema/abstract {:abstract :enumns}
              :enumns/option {:type :enum
                              :values {:enumns/one "One"
                                       :enumns/two "Two"

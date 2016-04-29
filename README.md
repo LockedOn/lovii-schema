@@ -149,10 +149,10 @@ Indexing required the following :index true. This will allow the schema transfor
 
 ```edn
 :label {:type :string :required false 
-					  :min-length 0 
-					  :max-length 60 
-					  :index true 
-					  :label "Label"}
+	 :min-length 0 
+	 :max-length 60 
+	 :index true 
+	 :label "Label"}
 ```
 Each field can have multiple validation applied to it, from the above example you can see the use of :required, :min-length & :max. The :required will allow data validators to ensure data is available for this fields when upserting.
 

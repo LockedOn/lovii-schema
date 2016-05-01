@@ -33,9 +33,11 @@
 (defn clean-data-flat
   [flat-schema data]
   (reduce (fn [res [attr value]]
-            (assoc res attr (clean-value flat-schema attr value)))
-          {}
-          data))
+            (if-let [value (clean-value flat-schema attr value)]
+	      (assoc res attr value)
+	      res))
+	  {}
+	  data))
 
 (defn clean-data
   [schema data]

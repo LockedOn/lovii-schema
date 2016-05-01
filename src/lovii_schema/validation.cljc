@@ -1,7 +1,6 @@
 (ns lovii-schema.validation
   (:require [lovii-schema.core :refer :all]
             [lovii-schema.schema :as loschema]
-            [com.stuartsierra.dependency :as dep]
             [schema.coerce]
             [schema.core :as s]))
 
@@ -12,13 +11,9 @@
                   false))))
 
 (defn type-schema [{:keys [type values regex] :as s}]
-  (println "type schema on " s)
   (case type
-    :enum ;if (keyword? values) 
-          ;  s/Any
-            (apply s/enum (keys values))
+    :enum (apply s/enum (keys values))
     :double (s/pred float?)
-    ;; Should decimal be a bigdecimal?
     :decimal (s/pred float?)
     :edn Edn
     :ref s/Any
@@ -84,14 +79,16 @@
                        (constrain-length v (type-schema v)))]
     [key-schema (apply-cardinality v value-schema)]))
 
+(def DbId s/Any)
+
 (defn build-validator 
   [validation-var variant-schema]
   (let [variant (:variant (:schema/variant variant-schema))] 
-    (into {:schema/variant (s/eq variant)}
+    (into {(s/optional-key :db/id) DbId
+           :schema/variant (s/eq variant)}
           (map #(create-kv-validator validation-var %) 
                (select-abstract-keys variant-schema)))))
 
-;; Figure out all of the infinitely recursing ones, and prebuild those too, but only point them at the final var via recursive
 (defn schemas->validators 
   [validation-var parsed-schema]
   (let [keyed-schemas (into {} 
@@ -110,3 +107,32 @@
                      [#(= variant (:schema/variant %))
                       schema]) 
                    schemas))))
+
+(defn mk-abstract->variants [parsed-schemas]
+  (->> parsed-schemas  
+       (map (fn [s]
+              [(:abstract (:schema/abstract s))
+               (:variant (:schema/variant s))]))
+       (group-by first)
+       (map (fn [[k vs]]
+              [k (mapv second vs)]))
+       (into {})))
+
+(defn expand-abstracts [parsed-schemas]
+  (let [abstract->variants (mk-abstract->variants parsed-schemas)]
+    (map (fn [s]
+           (->> s 
+                (map (fn [[k v]]
+                       (vector k
+                               (if (= :ref (:type v))
+                                 (update v :variants (fn [vs]
+                                                       (vec (mapcat #(get abstract->variants % [%]) vs))))
+                                 v))))
+                (into {})))
+         parsed-schemas)))
+
+(defmacro defrecursive-schema 
+  [symbol-name parsed-schemas]
+  `(let [vr# (def ~symbol-name nil)]
+     (alter-var-root vr# (constantly (v/schemas->validators vr# ~parsed-schemas)))
+     vr#))

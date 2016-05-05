@@ -33,8 +33,8 @@ Install from Clojars
 	:tags [{:schema/abstract :tags
 			:uuid {:type :uuid :unique :identity :required true}
 			:label {:type :string :required false 
-								  :min 0 
-								  :max 60 
+								  :min-length 0 
+								  :max-length 60 
 								  :index true 
 								  :label "Label"}
 			:inactive {:type :boolean :required false :index true :default false}}
@@ -84,13 +84,13 @@ Calling `(lovii-schema.schema/parse-schema schema-edn)` will produce the followi
  {:schema/abstract :tags,
   :schema/variant :tags/set,
   :tags/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one},
-  :tags/label {:type :string, :required false, :min 0, :max 60, :index true, :label "Label", :cardinality :one},
+  :tags/label {:type :string, :required false, :min-length 0, :max-length 60, :index true, :label "Label", :cardinality :one},
   :tags/inactive {:type :boolean, :required false, :index true, :default false, :cardinality :one},
   :tags/tags {:type :ref, :required false, :cardinality :has-many, :variants [:tags/leaf]}}
  {:schema/abstract :tags,
   :schema/variant :tags/leaf,
   :tags/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one},
-  :tags/label {:type :string, :required false, :min 0, :max 60, :index true, :label "Label", :cardinality :one},
+  :tags/label {:type :string, :required false, :min-length 0, :max-length 60, :index true, :label "Label", :cardinality :one},
   :tags/inactive {:type :boolean, :required false, :index true, :default false, :cardinality :one},
   :tags/tag {:type :string, :required true, :index true, :cardinality :one}}]
 ```
@@ -149,14 +149,14 @@ Indexing required the following :index true. This will allow the schema transfor
 
 ```edn
 :label {:type :string :required false 
-					  :min 0 
-					  :max 60 
-					  :index true 
-					  :label "Label"}
+	 :min-length 0 
+	 :max-length 60 
+	 :index true 
+	 :label "Label"}
 ```
-Each field can have multiple validation applied to it, from the above example you can see the use of :required, :min & :max. The :required will allow data validators to ensure data is available for this fields when upserting.
+Each field can have multiple validation applied to it, from the above example you can see the use of :required, :min-length & :max. The :required will allow data validators to ensure data is available for this fields when upserting.
 
-Min & Max let you limit the number of characters allowed for this field. This will also take the field type into consideration so if the field is an int then the min and max with look for valid integers in that range.
+Min-length & Max let you limit the number of characters allowed for this field. This will also take the field type into consideration so if the field is an int then the min-length and max with look for valid integers in that range.
 
 Regex expressions can be applied to the data which will bring more advanced data validation e.g. valid email format
 
@@ -165,8 +165,8 @@ Regex expressions can be applied to the data which will bring more advanced data
 :tags [{:schema/abstract :tags
 		:uuid {:type :uuid :unique :identity :required true}
 		:label {:type :string :required false 
-							  :min 0 
-							  :max 60 
+							  :min-length 0 
+							  :max-length 60 
 							  :index true 
 							  :label "Label"}
 		:inactive {:type :boolean :required false :index true :default false}}

@@ -108,28 +108,6 @@
                       schema]) 
                    schemas))))
 
-(defn mk-abstract->variants [parsed-schemas]
-  (->> parsed-schemas  
-       (map (fn [s]
-              [(:abstract (:schema/abstract s))
-               (:variant (:schema/variant s))]))
-       (group-by first)
-       (map (fn [[k vs]]
-              [k (mapv second vs)]))
-       (into {})))
-
-(defn expand-abstracts [parsed-schemas]
-  (let [abstract->variants (mk-abstract->variants parsed-schemas)]
-    (map (fn [s]
-           (->> s 
-                (map (fn [[k v]]
-                       (vector k
-                               (if (= :ref (:type v))
-                                 (update v :variants (fn [vs]
-                                                       (vec (mapcat #(get abstract->variants % [%]) vs))))
-                                 v))))
-                (into {})))
-         parsed-schemas)))
 
 (defmacro defrecursive-schema 
   [symbol-name parsed-schemas]

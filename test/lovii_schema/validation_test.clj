@@ -30,6 +30,7 @@
 
    :tags [{:schema/abstract {:abstract :tags}
            :uuid {:type :uuid :unique :identity :required true}
+           :service {:type :enum :values :social/service}
            :label {:type :string :required false 
                    :min-length 2
                    :max-length 60 

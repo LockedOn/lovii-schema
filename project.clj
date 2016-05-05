@@ -1,4 +1,4 @@
-(defproject lockedon/lovii-schema "0.2.3-SNAPSHOT"
+(defproject lockedon/lovii-schema "0.2.3"
   :description "Describe your application schema using data."
   :url "https://github.com/LockedOn/lovii-schema"
   :license {:name "MIT"

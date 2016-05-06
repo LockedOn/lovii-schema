@@ -17,8 +17,10 @@
            :tags {:type :ref :variants [:tags/set] :cardinality :one}
            :social {:type :ref :variants [:social] :cardinality :has-many}}
 
-   :social {:schema/variant {:variant :social}
+   :social {:schema/variant {:variant :social :required [#{:all-nothing-1 :all-nothing-2}]}
             :uuid {:type :uuid :unique :identity :required true}
+            :all-nothing-1 {:type :string}
+            :all-nothing-2 {:type :string}
             :service {:type :enum :values {:twitter "Twitter"
                                            :google  "Google"
                                            :facebook "Facebook" 

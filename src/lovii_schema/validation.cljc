@@ -81,7 +81,8 @@
 
 (defn build-validator 
   [validation-var variant-schema]
-  (let [variant (:variant (:schema/variant variant-schema))] 
+  (let [variant (:variant (:schema/variant variant-schema))
+        entity-required (:required (:schema/variant variant-schema))]
     (into {:schema/variant (s/eq variant)}
           (map #(create-kv-validator validation-var %) 
                (select-abstract-keys variant-schema)))))

@@ -79,13 +79,10 @@
                        (constrain-length v (type-schema v)))]
     [key-schema (apply-cardinality v value-schema)]))
 
-(def DbId s/Any)
-
 (defn build-validator 
   [validation-var variant-schema]
   (let [variant (:variant (:schema/variant variant-schema))] 
-    (into {(s/optional-key :db/id) DbId
-           :schema/variant (s/eq variant)}
+    (into {:schema/variant (s/eq variant)}
           (map #(create-kv-validator validation-var %) 
                (select-abstract-keys variant-schema)))))
 

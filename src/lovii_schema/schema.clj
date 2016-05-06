@@ -12,6 +12,24 @@
             (assoc res (add-namespace k n) v))
           {} m))
 
+(defn- add-namespace-required
+  [m n]
+  (update-in m 
+             [:schema/variant :required] 
+             (fn [requireds]
+               (map (fn [r]
+                      (into (empty r) 
+                            (map (fn [v] 
+                                   (keyword (name n) (name v)))
+                                 r)))
+                    requireds))))
+
+(defn expand-abstract-requireds [m n]
+  (assoc-in m 
+            [:schema/variant :required] 
+            (vec (concat (:required (:schema/variant m)) 
+                         (:required (:schema/abstract m)))))) 
+
 (defn- expand-attribute-enums
   [n]
   (fn [v]
@@ -35,29 +53,6 @@
            (assoc v :default-value))
       v)))
 
-(defn- add-namespace-required
-  [v n]
-  (cond (vector? v)
-        (mapv #(add-namespace-required % n) v)
-
-        (set? v)
-        (reduce (fn [res v*]
-                  (conj res (add-namespace-required v* n)))
-                #{} v)
-
-        (keyword? v)
-        (add-namespace v n)
-
-        :else
-        v))
-
-(defn- expand-attribute-required
-  [n]
-  (fn [v]
-    (if (:required v)
-      (assoc v :required (add-namespace-required (:required v) n))
-      v)))
-
 (defn- apply-fns
   [m fns]
   (reduce (fn [m* f]
@@ -78,21 +73,23 @@
     (when-some [n (-> m :schema/abstract :abstract)]
       (some-> m
               (add-namespace-map n)
-              (apply-fns [(expand-default-values n) (expand-attribute-enums n) (expand-attribute-required n)])
+              (expand-abstract-requireds n)
+              (add-namespace-required n)
+              (apply-fns [(expand-default-values n) (expand-attribute-enums n)])
               (apply-fns [cardinality-one])
               (apply-fns fns)))))
 
 (defn- expand-schema-variant
-	[m]
-	(let [variant (-> m :schema/variant)
-		  abstract (-> m :schema/abstract)
-		  variant-map (if (keyword? variant)
-		  				  {:schema/variant {:variant variant}}
-		  				  {})
-		  abstract-map (if (keyword? abstract)
-		  					{:schema/abstract {:abstract abstract}}
-		  					{})]
-		  (merge m variant-map abstract-map)))
+  [m]
+  (let [variant (-> m :schema/variant)
+        abstract (-> m :schema/abstract)
+        variant-map (if (keyword? variant)
+                      {:schema/variant {:variant variant}}
+                      {})
+        abstract-map (if (keyword? abstract)
+                       {:schema/abstract {:abstract abstract}}
+                       {})]
+    (merge m variant-map abstract-map)))
 
 (defn expand-enums [parsed]
   (clojure.walk/postwalk 

@@ -79,13 +79,25 @@
                        (constrain-length v (type-schema v)))]
     [key-schema (apply-cardinality v value-schema)]))
 
+(defn add-entity-requireds [schema requireds]
+  (reduce (fn [s r]
+            (cond (set? r)
+                  (build-all-or-none-keys s r)
+                  (vector? r)
+                  (build-one-or-more-keys s r)
+                  :else
+                  (throw (ex-info "Bad variant required type. Must be either a set or a vector" 
+                                  {:required r}))))
+          schema
+          requireds))
+
 (defn build-validator 
   [validation-var variant-schema]
-  (let [variant (:variant (:schema/variant variant-schema))
-        entity-required (:required (:schema/variant variant-schema))]
-    (into {:schema/variant (s/eq variant)}
-          (map #(create-kv-validator validation-var %) 
-               (select-abstract-keys variant-schema)))))
+  (let [variant (:variant (:schema/variant variant-schema))]
+    (-> {:schema/variant (s/eq variant)}
+        (into (map #(create-kv-validator validation-var %) 
+                   (select-abstract-keys variant-schema)))
+        (add-entity-requireds (:required (:schema/variant variant-schema))))))
 
 (defn schemas->validators 
   [validation-var parsed-schema]

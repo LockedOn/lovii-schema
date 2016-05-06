@@ -17,7 +17,7 @@
            :tags {:type :ref :variants [:tags/set] :cardinality :one}
            :social {:type :ref :variants [:social] :cardinality :has-many}}
 
-   :social {:schema/variant {:variant :social :required [#{:all-nothing-1 :all-nothing-2}]}
+   :social {:schema/variant {:variant :social :required [#{:social/all-nothing-1 :social/all-nothing-2}]}
             :uuid {:type :uuid :unique :identity :required true}
             :all-nothing-1 {:type :string}
             :all-nothing-2 {:type :string}
@@ -30,9 +30,14 @@
                       :label "Social Service"}
             :account {:type :string :index true :label "Social Account"}}
 
-   :tags [{:schema/abstract {:abstract :tags}
-           :uuid {:type :uuid :unique :identity :required true}
+   :tags [{:schema/abstract {:abstract :tags :required [[:uuid]]}
+           :uuid {:type :uuid :unique :identity 
+                  ;; set above as part of abstract requireds
+                  ; :required true
+                  }
            :service {:type :enum :values :social/service}
+           :one-or-more1 {:type :string}
+           :one-or-more2 {:type :string}
            :label {:type :string :required false 
                    :min-length 2
                    :max-length 60 
@@ -40,7 +45,9 @@
                    :index true 
                    :label "Label"}
            :inactive {:type :boolean :required false :index true :default false}}
-          {:schema/variant {:variant :tags/set}
+
+          ;; Test the one or more required with :tag instead of setting to :required true
+          {:schema/variant {:variant :tags/set :required [[:one-or-more1 :one-or-more2]]}
            :tags {:type :ref :required false 
                   :cardinality :has-many 
                   :variants [:tags/leaf]}}
@@ -54,16 +61,20 @@
       ;; Missing UUID
       (is (thrown? Throwable (s/validate validation-schema 
                                          {:schema/variant :tags/set
+                                          :tags/one-or-more1 "someval"
                                           ;:tags/uuid (java.util.UUID/randomUUID)
                                           :tags/label "hi th 99 39393"})))
+
       ;; Missing :tags/label, which should succeed since required is false
       (is (s/validate validation-schema 
                       {:schema/variant :tags/set
+                       :tags/one-or-more1 "someval"
                        :tags/uuid (java.util.UUID/randomUUID)}))) 
 
     (testing "Regex"
       (is (thrown? Throwable (s/validate validation-schema 
                                          {:schema/variant :tags/set
+                                          :tags/one-or-more1 "someval"
                                           :tags/uuid (java.util.UUID/randomUUID)
                                           ;; tags/label should have a 3 in it
                                           :tags/label "hi th"}))))
@@ -73,40 +84,100 @@
                            {:schema/variant :social
                             :social/uuid (java.util.UUID/randomUUID)
                             :social/service :social/twitter})))
+
+    (testing "All or nothing" 
+      (is (s/validate validation-schema 
+                      {:schema/variant :social
+                       :social/uuid (java.util.UUID/randomUUID)
+                       :social/all-nothing-1 "hi"
+                       :social/all-nothing-2 "hi"
+                       :social/service :social/twitter}))
+
+      (is (s/validate validation-schema 
+                      {:schema/variant :social
+                       :social/uuid (java.util.UUID/randomUUID)
+                       :social/service :social/twitter}))
+
+      (is (thrown? Throwable 
+                   (s/validate validation-schema 
+                      {:schema/variant :social
+                       :social/uuid (java.util.UUID/randomUUID)
+                       :social/all-nothing-2 "hi"
+                       :social/service :social/twitter}))))
+
+
+    (testing "One or more" 
+      (is (thrown? Throwable 
+                   (s/validate validation-schema 
+                               {:schema/variant :tags/set
+                                :tags/uuid (java.util.UUID/randomUUID)
+                                :tags/label "33"})))
+
+      (is (s/validate validation-schema 
+                      {:schema/variant :tags/set
+                       :tags/one-or-more1 "someval"
+                       :tags/uuid (java.util.UUID/randomUUID)
+                       :tags/label "33"}))
+
+      (is (s/validate validation-schema 
+                      {:schema/variant :tags/set
+                       :tags/one-or-more1 "someval"
+                       :tags/one-or-more2 "someval"
+                       :tags/uuid (java.util.UUID/randomUUID)
+                       :tags/label "33"}))
+
+      (is (s/validate validation-schema 
+                      {:schema/variant :social
+                       :social/uuid (java.util.UUID/randomUUID)
+                       :social/service :social/twitter}))
+
+      (is (thrown? Throwable 
+                   (s/validate validation-schema 
+                               {:schema/variant :social
+                                :social/uuid (java.util.UUID/randomUUID)
+                                :social/all-nothing-2 "hi"
+                                :social/service :social/twitter}))))
     
     (testing "Min length" 
       (is (thrown? Throwable (s/validate validation-schema 
-                                              {:schema/variant :tags/set
-                                               :tags/uuid (java.util.UUID/randomUUID)
-                                               :tags/label "3"})))
+                                         {:schema/variant :tags/set
+                                          :tags/one-or-more1 "someval"
+                                          :tags/uuid (java.util.UUID/randomUUID)
+                                          :tags/label "3"})))
       
       (is (s/validate validation-schema 
-                           {:schema/variant :tags/set
-                            :tags/uuid (java.util.UUID/randomUUID)
-                            :tags/label "33"})))
+                      {:schema/variant :tags/set
+                       :tags/one-or-more1 "someval"
+                       :tags/uuid (java.util.UUID/randomUUID)
+                       :tags/label "33"})))
     
     (testing "Max length" 
       (is (s/validate validation-schema 
-                           {:schema/variant :tags/set
-                            :tags/uuid (java.util.UUID/randomUUID)
-                            :tags/label (apply str (repeat 60 3))}))
+                      {:schema/variant :tags/set
+                       :tags/uuid (java.util.UUID/randomUUID)
+                       :tags/one-or-more1 "someval"
+                       :tags/label (apply str (repeat 60 3))}))
       
       (is (thrown? Throwable (s/validate validation-schema 
-                                              {:schema/variant :tags/set
-                                               :tags/uuid (java.util.UUID/randomUUID)
-                                               :tags/label (apply str (repeat 61 3))}))))
+                                         {:schema/variant :tags/set
+                                          :tags/one-or-more1 "someval"
+                                          :tags/uuid (java.util.UUID/randomUUID)
+                                          :tags/label (apply str (repeat 61 3))}))))
     
     (testing "Ref validation"
       (is (s/validate validation-schema 
-                           {:schema/variant :tags/set
-                            :tags/tags [{:schema/variant :tags/leaf
-                                         :tags/uuid (java.util.UUID/randomUUID)
-                                         :tags/tag "leaf tag string"}]
-                            :tags/uuid (java.util.UUID/randomUUID)
-                            :tags/label "hi th 3"})))
+                      {:schema/variant :tags/set
+                       :tags/one-or-more1 "someval"
+                       :tags/tags [{:schema/variant :tags/leaf
+                                    :tags/uuid (java.util.UUID/randomUUID)
+                                    :tags/tag "leaf tag string"}]
+                       :tags/uuid (java.util.UUID/randomUUID)
+                       :tags/label "hi th 3"})))
+
     (testing "Ref to wrong variant type"
       (is (thrown? Throwable (s/validate validation-schema 
                                          {:schema/variant :tags/set
+                                          :tags/one-or-more1 "someval"
                                           :tags/tags [{:schema/variant :social
                                                        :social/uuid (java.util.UUID/randomUUID)
                                                        :social/service :social/twitter}]

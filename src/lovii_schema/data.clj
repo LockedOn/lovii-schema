@@ -1,34 +1,64 @@
 (ns lovii-schema.data
-  (:require [lovii-schema.util :refer [flatten-schema]]))
+  (:require [lovii-schema.util :refer [flatten-schema]])
+  (:import [java.text SimpleDateFormat]
+           [java.time Instant]
+           [java.util Date]))
 
 (declare clean-data-flat)
 
 (defn- clean-value
   [flat-schema attr value]
   (let [descriptor (get flat-schema attr)
-        type (:type descriptor)]
+        t (:type descriptor)]
     (cond (and (= (:cardinality descriptor :has-many))
                (vector? value))
           (mapv #(clean-value flat-schema attr %) value)
 
+          (and (map? value)
+               (= t :ref))
+          (clean-data-flat flat-schema value)
+
           (and (string? value)
-               (= type :uuid))
+               (= t :uuid))
           (java.util.UUID/fromString value)
 
+          ;; FIXME: hacky coercion method for dates
+          (and (string? value)
+               (= t :date))
+          (.parse
+           (SimpleDateFormat. "yyyy-mm-dd")
+           value)
+
+          ;; FIXME: hacky coercion method for dates
+          (and (string? value)
+               (= t :date-time))
+          (try
+           (Date/from (Instant/parse value))
+           (catch Exception _
+             (.parse
+              (SimpleDateFormat. "yyyy-mm-dd")
+              value)))
+
+          (and (= (type value) java.util.Date)
+               (#{:date :date-time} t))
+          value
+
           (and (keyword? value)
-               (= type :enum))
+               (= t :enum))
           value
 
           (and (string? value)
-               (= type :enum))
+               (= t :enum))
           (keyword value)
 
-          (contains? #{:string :boolean :long :bigint :double :bigdec :float :uuid :keyword} type)
+          (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
           value
 
-          (and (map? value)
-               (= type :ref))
-          (clean-data-flat flat-schema value))))
+          :else
+          (throw (ex-info "Unhandled clean value case" 
+                          {:descriptor descriptor
+                           :attr attr 
+                           :value value})))))
 
 (defn clean-data-flat
   [flat-schema data]

@@ -54,6 +54,10 @@
           (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
           value
 
+          (nil? descriptor)
+          (throw (ex-info "Attribute not present in schema" 
+                          {:attr attr}))
+
           :else
           (throw (ex-info "Unhandled clean value case" 
                           {:descriptor descriptor

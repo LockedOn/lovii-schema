@@ -14,36 +14,36 @@
 
 (defn- add-namespace-required
   [m n]
-  (update-in m 
-             [:schema/variant :required] 
+  (update-in m
+             [:schema/variant :required]
              (fn [requireds]
                (map (fn [r]
-                      (into (empty r) 
-                            (map (fn [v] 
+                      (into (empty r)
+                            (map (fn [v]
                                    (keyword (name n) (name v)))
                                  r)))
                     requireds))))
 
 (defn expand-abstract-requireds [m n]
-  (assoc-in m 
-            [:schema/variant :required] 
-            (vec (concat (:required (:schema/variant m)) 
-                         (:required (:schema/abstract m)))))) 
+  (assoc-in m
+            [:schema/variant :required]
+            (vec (concat (:required (:schema/variant m))
+                         (:required (:schema/abstract m))))))
 
 (defn- expand-attribute-enums
   [n]
   (fn [v]
     (cond (and (= :enum (:type v))
-		(map? (:values v)))
-	  (->> (add-namespace-map (:values v) n)
-	       (assoc v :values))
+               (map? (:values v)))
+          (->> (add-namespace-map (:values v) n)
+               (assoc v :values))
 
-	  (and (= :enum (:type v))
-	       (keyword? (:values v))) 
+          (and (= :enum (:type v))
+               (keyword? (:values v)))
           (assoc v :values (with-meta {} {:enum-values (:values v)}))
 
-	  :else
-	  v)))
+          :else
+          v)))
 
 (defn- expand-default-values
   [n]
@@ -92,9 +92,9 @@
     (merge m variant-map abstract-map)))
 
 (defn expand-enums [parsed]
-  (clojure.walk/postwalk 
+  (clojure.walk/postwalk
    (fn [v]
-     (let [enum (-> v meta :enum-values)] 
+     (let [enum (-> v meta :enum-values)]
        (cond enum
              (->> parsed
                   (apply concat)
@@ -106,11 +106,11 @@
                   :values)
 
              :else
-             v))) 
-   parsed)) 
+             v)))
+   parsed))
 
 (defn mk-abstract->variants [parsed-schemas]
-  (->> parsed-schemas  
+  (->> parsed-schemas
        (map (fn [s]
               [(:abstract (:schema/abstract s))
                (:variant (:schema/variant s))]))
@@ -122,7 +122,7 @@
 (defn expand-abstracts [parsed-schemas]
   (let [abstract->variants (mk-abstract->variants parsed-schemas)]
     (map (fn [s]
-           (->> s 
+           (->> s
                 (map (fn [[k v]]
                        (vector k
                                (if (= :ref (:type v))

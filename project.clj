@@ -1,4 +1,4 @@
-(defproject lockedon/lovii-schema "0.2.6"
+(defproject lockedon/lovii-schema "0.2.7"
   :description "Describe your application schema using data."
   :url "https://github.com/LockedOn/lovii-schema"
   :license {:name "MIT"
@@ -9,4 +9,5 @@
                                   [com.datomic/datomic-free "0.9.5201" :exclusions [joda-time]]]
                    :plugins [[com.jakemccrary/lein-test-refresh "0.10.0"]]
                    :main lovii-schema.core}}
+  :plugins [[lein-cljfmt "0.5.1"]]
   :deploy-repositories [["releases" :clojars]])

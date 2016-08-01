@@ -1,5 +1,5 @@
 (ns lovii-schema.data
-  (:require [lovii-schema.util :refer [flatten-schema]])
+  (:require [lovii-schema.util :refer [flatten-schema back-ref? forward-ref]])
   (:import [java.text SimpleDateFormat]
            [java.time Instant]
            [java.util Date]))
@@ -10,73 +10,73 @@
   [flat-schema attr value]
   (let [descriptor (get flat-schema attr)
         t (:type descriptor)]
-    (cond (and (= (:cardinality descriptor :has-many))
-               (vector? value))
-          (mapv #(clean-value flat-schema attr %) value)
+    (cond ;; allow backref's
+      (and (back-ref? attr)
+           (-> (get flat-schema (forward-ref attr)) :type (= :ref)))
+      [attr [(first value) (clean-value flat-schema (first value) (second value))]]
 
-          (and (map? value)
-               (= t :ref))
-          (clean-data-flat flat-schema value)
+      (and (= (:cardinality descriptor :has-many))
+           (vector? value))
+      (mapv #(clean-value flat-schema attr %) value)
 
-          (and (string? value)
-               (= t :uuid))
-          (java.util.UUID/fromString value)
+      (and (map? value)
+           (= t :ref))
+      (clean-data-flat flat-schema value)
+
+      (and (string? value)
+           (= t :uuid))
+      (java.util.UUID/fromString value)
 
           ;; FIXME: hacky coercion method for dates
-          (and (string? value)
-               (= t :date))
+      (and (string? value)
+           (= t :date))
+      (.parse
+       (SimpleDateFormat. "yyyy-mm-dd")
+       value)
+
+          ;; FIXME: hacky coercion method for dates
+      (and (string? value)
+           (= t :date-time))
+      (try
+        (Date/from (Instant/parse value))
+        (catch Exception _
           (.parse
            (SimpleDateFormat. "yyyy-mm-dd")
-           value)
+           value)))
 
-          ;; FIXME: hacky coercion method for dates
-          (and (string? value)
-               (= t :date-time))
-          (try
-           (Date/from (Instant/parse value))
-           (catch Exception _
-             (.parse
-              (SimpleDateFormat. "yyyy-mm-dd")
-              value)))
+      (and (= (type value) java.util.Date)
+           (#{:date :date-time} t))
+      value
 
-          (and (= (type value) java.util.Date)
-               (#{:date :date-time} t))
-          value
+      (and (keyword? value)
+           (= t :enum))
+      value
 
-          (and (keyword? value)
-               (= t :enum))
-          value
+      (and (string? value)
+           (= t :enum))
+      (keyword value)
 
-          (and (string? value)
-               (= t :enum))
-          (keyword value)
+      (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
+      value
 
-          (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
-          value
+      (nil? descriptor)
+      (throw (ex-info "Attribute not present in schema"
+                      {:attr attr}))
 
-          ;; allow backref's
-          (and (nil? descriptor)
-               (map? value))
-          (clean-data-flat flat-schema value)
-
-          (nil? descriptor)
-          (throw (ex-info "Attribute not present in schema" 
-                          {:attr attr}))
-
-          :else
-          (throw (ex-info "Unhandled clean value case" 
-                          {:descriptor descriptor
-                           :attr attr 
-                           :value value})))))
+      :else
+      (throw (ex-info "Unhandled clean value case"
+                      {:descriptor descriptor
+                       :attr attr
+                       :value value})))))
 
 (defn clean-data-flat
   [flat-schema data]
   (reduce (fn [res [attr value]]
             (if-let [value (clean-value flat-schema attr value)]
-	      (assoc res attr value)
-	      res))
-	  {}
-	  data))
+              (assoc res attr value)
+              res))
+          {}
+          data))
 
 (defn clean-data
   [schema data]

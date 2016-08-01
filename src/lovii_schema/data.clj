@@ -54,6 +54,11 @@
           (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
           value
 
+          ;; allow backref's
+          (and (nil? descriptor)
+               (map? value))
+          (clean-data-flat flat-schema value)
+
           (nil? descriptor)
           (throw (ex-info "Attribute not present in schema" 
                           {:attr attr}))

@@ -52,18 +52,18 @@
 (deftest schema-test
   (testing "Parse Schema"
     (is (= lo-schema
-           [{:schema/variant {:variant :testns}
+           [{:schema/variant {:variant :testns :required '()}
              :testns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}
              :testns/counter {:type :double, :required true, :cardinality :one}
              :testns/second {:type :ref, :cardinality :one :variants [:secondns]}
              :schema/abstract {:abstract :testns}}
-            {:schema/variant {:variant :secondns}
+            {:schema/variant {:variant :secondns :required '()}
              :secondns/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one}
              :secondns/counter {:type :double, :required true, :cardinality :has-many}
              :schema/abstract {:abstract :secondns}}])))
   (testing "Parse Expand Namespace"
     (is (= (loschema/parse-schema enum-test-data)
-           [{:schema/variant {:variant :enumns}
+           [{:schema/variant {:variant :enumns :required '()}
              :schema/abstract {:abstract :enumns}
              :enumns/option {:type :enum
                              :values {:enumns/one "One"

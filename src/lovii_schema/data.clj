@@ -13,7 +13,8 @@
     (cond ;; allow backref's
       (and (back-ref? attr)
            (-> (get flat-schema (forward-ref attr)) :type (= :ref)))
-      [attr [(first value) (clean-value flat-schema (first value) (second value))]]
+      (do (prn (-> (clean-data-flat flat-schema {(keyword (first value)) (second value)}) seq first)) 
+          (-> (clean-data-flat flat-schema {(keyword (first value)) (second value)}) seq first))
 
       (and (= (:cardinality descriptor :has-many))
            (vector? value))
@@ -60,11 +61,11 @@
       value
 
       (nil? descriptor)
-      (throw (ex-info "Attribute not present in schema"
+      (throw (ex-info (str "Attribute not present in schema: " attr)
                       {:attr attr}))
 
       :else
-      (throw (ex-info "Unhandled clean value case"
+      (throw (ex-info (str "Unhandled clean value case: " attr)
                       {:descriptor descriptor
                        :attr attr
                        :value value})))))

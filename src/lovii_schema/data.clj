@@ -13,8 +13,12 @@
     (cond ;; allow backref's
       (and (back-ref? attr)
            (-> (get flat-schema (forward-ref attr)) :type (= :ref)))
-      (do (prn (-> (clean-data-flat flat-schema {(keyword (first value)) (second value)}) seq first)) 
-          (-> (clean-data-flat flat-schema {(keyword (first value)) (second value)}) seq first))
+      (let [[v1 v2] (cond (vector? value)
+                          value 
+                      
+                          (map? value)
+                          (-> value seq first))]
+        (-> (clean-data-flat flat-schema {(keyword v1) v2}) seq first))
 
       (and (= (:cardinality descriptor :has-many))
            (vector? value))

@@ -141,7 +141,7 @@
 (defn- data->datoms-flat
   [flat-schema tempid data base type-map]
   (if (vector? data)
-    (mapv #(data->datoms-flat flat-schema % base) data)
+    (mapv #(data->datoms-flat flat-schema tempid % base type-map) data)
     (let [parent-id (tempid :db.part/user)
           [cleaned parts] (reduce (fn [[res m-parts] [a v]]
                                     (let [[v* more-parts] (datom-values flat-schema tempid a v parent-id type-map)]

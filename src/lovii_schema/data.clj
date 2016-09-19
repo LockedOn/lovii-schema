@@ -61,6 +61,14 @@
            (= t :enum))
       (keyword value)
 
+      (and (= t :double)
+           (-> value type (not= java.lang.Double)))
+      (-> value str Double/parseDouble)
+
+      (and (= t :float)
+           (-> value type (not= java.lang.Float)))
+      (-> value str Float/parseFloat)
+
       (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
       value
 

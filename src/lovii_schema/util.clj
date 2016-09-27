@@ -15,12 +15,17 @@
                         {:schema1 s1cmp
                          :schema2 s2cmp}))))))
 
+(defn combine [vs1 vs2]
+  (assert (or (and (sequential? vs1) (sequential? vs2))
+              (and (map? vs1) (map? vs2))))
+  (into vs1 vs2))
+
 (defn merge-schemas [m1 m2]
   (assert-schemas-compatible m1 m2)
   (cond-> (merge m1 m2)
     (or (= :enum (:type m1))
         (= :enum (:enum m2)))
-    (assoc :values (into (vec (:values m1)) (:values m2)))))
+    (update :values combine (:values m1))))
 
 (defn no-enum-values-also-variants [flat-schema]
   (let [values-enums (->> (dissoc flat-schema :schema/variant)

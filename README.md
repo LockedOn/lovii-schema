@@ -3,61 +3,62 @@
 [![Build Status](https://travis-ci.org/LockedOn/lovii-schema.svg?branch=master)](https://travis-ci.org/LockedOn/lovii-schema)
 
 Describe & design your application using data. Version control your data structures.
-A fast data driven way to design complex entity relationships for graph databases. Designed to keep as much relevant data together..
+A fast data driven way to design complex entity relationships for graph databases. Designed to keep as much relevant data together.
 
-Install from Clojars
+Install from Clojars:
 
 [![Clojars Project](https://img.shields.io/clojars/v/lockedon/lovii-schema.svg)](https://clojars.org/lockedon/lovii-schema)
 
 ### Example EDN
 
 ```edn
-{
-	:users {:schema/variant :users
-			:uuid {:type :uuid :unique :identity :required true}
-			:name {:type :string :label "Full Name" }
-			:tags {:type :ref :variants [:tags/set] :cardinality :one}
-			:social {:type :ref :variants [:social] :cardinality :has-many}}
+{:users {:schema/variant :users
+         :uuid {:type :uuid :unique :identity :required true}
+         :name {:type :string :label "Full Name" }
+         :tags {:type :ref :variants [:tags/set] :cardinality :one}
+         :social {:type :ref :variants [:social] :cardinality :has-many}}
 
-	:social {:schema/variant :social
-		     :uuid {:type :uuid :unique :identity :required true}
-		     :service {:type :enum :values {:twitter "Twitter"
-	  								      :google  "Google"
-	  								      :facebook "Facebook" 
-	  								      :linkedin "LinkedIn"
-	  								      :icq "ICQ"
-	  								      :myspace "MySpace"}
-					  		     :label "Social Service"}
-		     :account {:type :string :index true :label "Social Account"}}
+ :social {:schema/variant :social
+          :uuid {:type :uuid :unique :identity :required true}
+          :service {:type :enum
+                    :values {:twitter "Twitter"
+                             :google  "Google"
+                             :facebook "Facebook"
+                             :linkedin "LinkedIn"
+                             :icq "ICQ"
+                             :myspace "MySpace"}
+                    :label "Social Service"}
+          :account {:type :string :index true :label "Social Account"}}
 
-	:tags [{:schema/abstract :tags
-			:uuid {:type :uuid :unique :identity :required true}
-			:label {:type :string :required false 
-								  :min-length 0 
-								  :max-length 60 
-								  :index true 
-								  :label "Label"}
-			:inactive {:type :boolean :required false :index true :default false}}
-		   {:schema/variant :tags/set
-			:tags {:type :ref :required false 
-							  :cardinality :has-many 
-							  :variants [:tags/leaf]}}
-		   {:schema/variant :tags/leaf
-			:tag {:type :string :required true :index true}}]
-}
+ :tags [{:schema/abstract :tags
+         :uuid {:type :uuid :unique :identity :required true}
+         :label {:type :string
+                 :required false
+                 :min-length 0
+                 :max-length 60
+                 :index true
+                 :label "Label"}
+         :inactive {:type :boolean :required false :index true :default false}}
+        {:schema/variant :tags/set
+         :tags {:type :ref
+                :required false
+                :cardinality :has-many
+                :variants [:tags/leaf]}}
+        {:schema/variant :tags/leaf
+         :tag {:type :string :required true :index true}}]}
 ```
 
 ### Schema Format
 
 The whole structure is defined in a nested map. Each node itself is a map, additional information is preserved through transformation where possible. Allowing the use of custom transformers which could be used for a number of operation e.g. UI field generator, custom validation, transform to different data formats etc.
 
-The first level shows all entity namespaces available in your structure. Each entity namespace contains a map of attributes, these will get expanded with the entity namespace unless the keyword has already been namespaced e.g. :schema/variant or :schema/abstract. See the expanded version below for an example of how the namespacing works.
+The first level shows all entity namespaces available in your structure. Each entity namespace contains a map of attributes, these will get expanded with the entity namespace unless the keyword has already been namespaced e.g. `:schema/variant` or `:schema/abstract`. See the expanded version below for an example of how the namespacing works.
 
 All datomic types are supported without the namespace and we have mapped some of them to the following list which make the schema easier to reason.
 
-* enum -> ref (db.ident)
-* date-time -> instant
-* date -> instant
+* `:enum` -> `:db.type/ref`
+* `:date-time` -> `:db.type/instant`
+* `:date` -> `:db.type/instant`
 
 ### Expanded Version
 
@@ -74,12 +75,12 @@ Calling `(lovii-schema.schema/parse-schema schema-edn)` will produce the followi
   :schema/variant :social,
   :social/uuid {:type :uuid, :unique :identity, :required true, :cardinality :one},
   :social/service {:type :enum, :label "Social Service", :cardinality :one
-				   :values {:social/twitter "Twitter",
-				    		:social/google "Google",
-				    		:social/facebook "Facebook",
-				    		:social/linkedin "LinkedIn",
-				    		:social/icq "ICQ",
-				    		:social/myspace "MySpace"}},
+                   :values {:social/twitter "Twitter",
+                            :social/google "Google",
+                            :social/facebook "Facebook",
+                            :social/linkedin "LinkedIn",
+                            :social/icq "ICQ",
+                            :social/myspace "MySpace"}},
   :social/account {:type :string, :index true, :label "Social Account", :cardinality :one}}
  {:schema/abstract :tags,
   :schema/variant :tags/set,
@@ -102,59 +103,67 @@ This expanded version above shows what the schema looks like before it's sent to
 ```clojure
 (require 'lovii-schema.schema)
 
-(defn email-type
-	[desc]
-	(if (= (:type desc) :email)
-		(merge desc {:type :string :regex "emailsregex"})
-		desc))
+(defn email-type [m]
+  (if (= (:type m) :email)
+    (merge m {:type :string :regex "emailsregex"})
+    m))
 
-(lovii-schema.schema/parse-schema {:testns {:schema/variant :testns 
-											:email {:type :email :required true}}} 
-								  email-type)
+(lovii-schema.schema/parse-schema
+  {:test-namespace {:schema/variant :test-namespace
+                    :email {:type :email
+                            :required true}}}
+  email-type)
 
-#_=> [{:schema/abstract :testns
-       :schema/variant :testns
-       :testns/email {:type :string :regex "emailsregex" :required true :cardinality :one}}]
+#_=> [{:schema/abstract :test-namespace
+       :schema/variant :test-namespace
+       :test-namespace/email {:type :string
+                              :regex "emailsregex"
+                              :required true
+                              :cardinality :one}}]
+
 ```
 
 *Notes* 
 
 * All abstracts will be removed and merged into the variants
-* Cardinality :one will be added to any field that dosnt have :has-many.
+* Cardinality `:one` will be added to any field that doesn't have `:has-many`.
 * Enum values will also be namespaced unless they already have one.
 
 ### Enums
 
 ```edn
 {:social {:uuid {:type :uuid :unique :identity :required true}
-		 :service {:type :enum :values {:twitter "Twitter"
-	  								  :google  "Google"
-	  								  :facebook "Facebook" 
-	  								  :linkedin "LinkedIn"
-	  								  :icq "ICQ"
-	  								  :myspace "MySpace"}
-					  		 :label "Social Service"}
-		 :account {:type :string :index true :label "Social Account"}}}
+          :service {:type :enum
+                    :values {:twitter "Twitter"
+                             :google  "Google"
+                             :facebook "Facebook"
+                             :linkedin "LinkedIn"
+                             :icq "ICQ"
+                             :myspace "MySpace"}
+                    :label "Social Service"}
+          :account {:type :string :index true :label "Social Account"}}}
+
 ```
 
 Enum is a special type we have created which allows you to set keywords that can be referenced. The above example shows the values in a map, where the key is what is stored and the value is the display label. This allows you to generate ui elements directly from the schema output.
 
 ### Cardinality & Indexes
 
-There are two options for cardinatily :has-many or :one. Has many allowing multiple values to be stored for this field.
+There are two options for cardinatily `:has-many` or `:one`. Has many allowing multiple values to be stored for this field.
 
-Indexing required the following :index true. This will allow the schema transformer to apply indexes to the field.
+Indexing required the following `:index` true. This will allow the schema transformer to apply indexes to the field.
 
 ### Validation
 
 ```edn
-:label {:type :string :required false 
-	 :min-length 0 
-	 :max-length 60 
-	 :index true 
-	 :label "Label"}
+:label {:type :string
+        :required false
+        :min-length 0
+        :max-length 60
+        :index true
+        :label "Label
 ```
-Each field can have multiple validation applied to it, from the above example you can see the use of :required, :min-length & :max. The :required will allow data validators to ensure data is available for this fields when upserting.
+Each field can have multiple validation applied to it, from the above example you can see the use of `:required`, `:min-length` & `:max`. The `:required` will allow data validators to ensure data is available for this fields when upserting.
 
 Min-length & Max let you limit the number of characters allowed for this field. This will also take the field type into consideration so if the field is an int then the min-length and max with look for valid integers in that range.
 
@@ -163,23 +172,24 @@ Regex expressions can be applied to the data which will bring more advanced data
 ### Abstract & Variants 
 ```edn
 :tags [{:schema/abstract :tags
-		:uuid {:type :uuid :unique :identity :required true}
-		:label {:type :string :required false 
-							  :min-length 0 
-							  :max-length 60 
-							  :index true 
-							  :label "Label"}
-		:inactive {:type :boolean :required false :index true :default false}}
-	   {:schema/variant :tags/set
-		:tags {:type :ref :required false 
-						  :cardinality :has-many 
-						  :variants [:tags/leaf]}}
-	   {:schema/variant :tags/leaf
-		:tag {:type :string :required true :index true}}]
+        :uuid {:type :uuid :unique :identity :required true}
+        :label {:type :string :required false
+                :min-length 0
+                :max-length 60
+                :index true
+                :label "Label"}
+        :inactive {:type :boolean :required false :index true :default false}}
+       {:schema/variant :tags/set
+        :tags {:type :ref :required false
+               :cardinality :has-many
+               :variants [:tags/leaf]}}
+       {:schema/variant :tags/leaf
+        :tag {:type :string :required true :index true}}]
+
 ```
 Variants allow you to specify fields that will only be available when referenced from another field requiring those specific fields. 
 
-Using an abstract concept, saves you from writing out the complete set for each variant. This allows you to store the common fields in the abstract which gets merged for each variant. If we look at the above example for :tags/set and :tags/leaf they will both have :uuid, :label and :inactive.
+Using an abstract concept, saves you from writing out the complete set for each variant. This allows you to store the common fields in the abstract which gets merged for each variant. If we look at the above example for `:tags/set` and `:tags/leaf` they will both have `:uuid`, `:label` and `:inactive`.
 
 ### Transformers
 
@@ -187,7 +197,7 @@ The following are the included transformers, this list will be expanded in the f
 
 *Datomic Schema*
 
->Takes the lovii schema and transforms into vaild datomic schema.
+> Takes the lovii schema and transforms into vaild datomic schema.
 
 ### Roadmap
 

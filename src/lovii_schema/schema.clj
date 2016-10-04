@@ -1,4 +1,6 @@
-(ns lovii-schema.schema)
+(ns lovii-schema.schema
+  (:require [com.rpl.specter :as sp])
+  (:use     [com.rpl.specter.macros]))
 
 (defn- add-namespace
   [k n]
@@ -79,9 +81,55 @@
               (apply-fns [cardinality-one])
               (apply-fns fns)))))
 
-(defn- expand-schema-variant
+(defn expand-schema-variant2 [sch]
+  (let [; able to transform
+        ;{:users {:schema/variant :users}} into
+        ;{:users {:schema/variant {:variant :users}}}
+        vm [sp/MAP-VALS (sp/must :schema/variant) keyword?]
+        ; able to transform
+        ;{:users [{:schema/variant :users}}] into
+        ;{:users [{:schema/variant {:variant :users}}]}
+        vv [sp/MAP-VALS sp/ALL (sp/must :schema/variant) keyword?]
+
+        fix (fn [v] {:variant v})]
+        (->> sch
+             (sp/transform vm fix)
+             (sp/transform vv fix))))
+
+(defn expand-schema-abstract2 [sch]
+  (let [; able to transform
+        ;{:users {:schema/abstract :users}} into
+        ;{:users {:schema/abstract {:abstract :users}}}
+        vm [sp/MAP-VALS (sp/must :schema/abstract) keyword?]
+
+        ; able to transform
+        ;{:users [{:schema/abstract :users}}] into
+        ;{:users [{:schema/abstract {:abstract :users}}]}
+        vv [sp/MAP-VALS sp/ALL (sp/must :schema/abstract) keyword?]
+
+        fix (fn [v] {:abstract v})]
+        (->> sch
+             (sp/transform vm fix)
+             (sp/transform vv fix))))
+
+(comment
+  (sp/select [sp/MAP-VALS] {:a 1 :b 2} )
+  (sp/select [sp/ALL] {:a 1 :b 2} )
+  (sp/select [sp/VAL] {:a 1 :b 2 :c {:d 5} } )
+  (sp/select [sp/MAP-VALS keyword?] {:a :FF :b 2} )
+  (sp/select [:c] {:a 1 :b 2} )
+  (sp/transform  [sp/MAP-VALS] (fn [m] :vv) {:a 5 :b 2})
+  (sp/transform  [sp/MAP-VALS map? (sp/must :e) ] (fn [m] :vv) {:a 5 :b 2 :c {:d 5} })
+  (sp/transform  (sp/select [sp/MAP-VALS {:a 5 :b 2} ]) inc {:a 5 :b 2})
+  (sp/transform  (sp/select [sp/ALL sp/LAST] {:a 5 :b 2} ) inc {:a 5 :b 2})
+  (sp/transform  (sp/select [sp/VAL] {:a 5 :b 2} ) (fn [m] {:c 9}) {:a 5 :b 2})
+  (sp/transform [sp/ALL :a] dec [{:a 2 :b 3} {:a 1} {:a 4}])
+  )
+
+
+(defn expand-schema-variant
   [m]
-  (let [variant (-> m :schema/variant)
+  (let [variant  (-> m :schema/variant)
         abstract (-> m :schema/abstract)
         variant-map (if (keyword? variant)
                       {:schema/variant {:variant variant}}
@@ -157,3 +205,29 @@
        expand-enums
        expand-abstracts
        (vec)))
+
+
+(defn parse-schema2
+  [lo-schema & fns]
+  (let [sch (-> lo-schema 
+                expand-schema-variant2 
+                expand-schema-abstract2)]
+        (->> sch
+             (reduce (fn [res [_ sch]]
+                       (when res
+                         (cond (vector? sch)
+                               (when-some [abstract (first (filter #(-> % :schema/abstract :abstract) sch))]
+                                 (some->> (filter #(-> % :schema/variant :variant) sch)
+                                          (map #(merge abstract %))
+                                          (map (expand-variant-keys lo-schema fns))
+                                          (concat res)))
+
+                               (map? sch)
+                               (let [variant (-> sch :schema/variant :variant)]
+                                 (some->> (merge sch {:schema/abstract {:abstract variant}})
+                                          ((expand-variant-keys lo-schema fns))
+                                          (conj res))))))
+                     [])
+             expand-enums
+             expand-abstracts
+             (vec))))

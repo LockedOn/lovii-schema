@@ -54,12 +54,12 @@
                         (if (-> c back-ref? not)
                           (assoc a b (conj (set (get a b)) (back-ref c)))
                           a)) {}))
-         identities 
-         (->> flat-schema 
-              (filter (fn [[x y]] 
-                        (-> y :unique (= :identity)))) 
-              (map first) 
-               set)]
+         identities
+         (->> flat-schema
+              (filter (fn [[x y]]
+                        (-> y :unique (= :identity))))
+              (map first)
+              set)]
      ^:schema-stats {:parsed-schema parsed-schema
                      :flat-schema flat-schema
                      :keys {:abstracts abstract-keys

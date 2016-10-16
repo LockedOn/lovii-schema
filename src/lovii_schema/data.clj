@@ -14,8 +14,8 @@
       (and (back-ref? attr)
            (-> (get flat-schema (forward-ref attr)) :type (= :ref)))
       (let [[v1 v2] (cond (vector? value)
-                          value 
-                      
+                          value
+
                           (map? value)
                           (-> value seq first))]
         (-> (clean-data-flat flat-schema {(keyword v1) v2}) seq first))
@@ -85,9 +85,10 @@
 (defn clean-data-flat
   [flat-schema data]
   (reduce (fn [res [attr value]]
-            (if-let [value (clean-value flat-schema attr value)]
-              (assoc res attr value)
-              res))
+            (let [value (clean-value flat-schema attr value)]
+              (if (some? value)
+                (assoc res attr value)
+                res)))
           {}
           data))
 

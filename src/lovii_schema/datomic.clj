@@ -123,7 +123,7 @@
           (->> value
                (mapv #(datom-values flat-schema tempid attr % parent-id type-map))
                (reduce (fn [[res parts] [v* more-parts]]
-                         [(if v*
+                         [(if (some? v*)
                             (vec (concat res [v*]))
                             res)
                           (if more-parts
@@ -145,7 +145,7 @@
     (let [parent-id (tempid :db.part/user)
           [cleaned parts] (reduce (fn [[res m-parts] [a v]]
                                     (let [[v* more-parts] (datom-values flat-schema tempid a v parent-id type-map)]
-                                      [(if v*
+                                      [(if (some? v*)
                                          (assoc res a v*)
                                          res)
                                        (if more-parts

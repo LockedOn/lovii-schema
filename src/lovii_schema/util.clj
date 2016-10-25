@@ -27,31 +27,41 @@
         (= :enum (:enum m2)))
     (update :values combine (:values m1))))
 
-(defn no-enum-values-also-variants [flat-schema]
+(defn enum-values-also-variants [flat-schema]
   (let [values-enums (->> (dissoc flat-schema :schema/variant)
                           (keep (comp :values val))
                           (reduce into [])
                           (map first)
                           (set))
-        variants-enums (set (keys (:values (:schema/variant flat-schema))))
-        intersection (clojure.set/intersection values-enums variants-enums)]
-    (empty? intersection)))
+        variants-enums (set (keys (:values (:schema/variant flat-schema))))]
+    (clojure.set/intersection values-enums variants-enums)))
+
+(defn variants-also-attributes [flat-schema]
+  (clojure.set/intersection (set (keys (:values (:schema/variant flat-schema))))
+                            (set (keys flat-schema))))
 
 (defn flatten-schema-unmemoized [schema]
-  {:post [(no-enum-values-also-variants %)]}
-  (->> schema
-       (reduce (fn [res m]
-                 (-> m
-                     (dissoc :schema/variant)
-                     (dissoc :schema/abstract)
-                     (->> (merge-with merge-schemas res))))
-               {})
-       (merge {:schema/variant {:type :enum
-                                :cardinality :one
-                                :values (reduce (fn [res ke]
-                                                  (assoc res ke (str ke)))
-                                                {}
-                                                (all-variants schema))}})))
+  (let [flat-schema (->> schema
+                         (reduce (fn [res m]
+                                   (-> m
+                                       (dissoc :schema/variant)
+                                       (dissoc :schema/abstract)
+                                       (->> (merge-with merge-schemas res))))
+                                 {})
+                         (merge {:schema/variant {:type :enum
+                                                  :cardinality :one
+                                                  :values (reduce (fn [res ke]
+                                                                    (assoc res ke (str ke)))
+                                                                  {}
+                                                                  (all-variants schema))}}))
+        enums-variants (enum-values-also-variants flat-schema)
+        variants-also-attributes (variants-also-attributes flat-schema)]
+    (when-not (empty? enums-variants)
+      (throw (ex-info "Detected schema enums that have the same name as schema variants" {:intersection enums-variants})))
+    (when-not (empty? variants-also-attributes)
+      (throw (ex-info "Detected schema variants that have the same name as schema attributes" {:intersection variants-also-attributes})))
+    flat-schema))
+
 (def flatten-schema
   (memoize flatten-schema-unmemoized))
 

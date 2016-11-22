@@ -1,4 +1,5 @@
-(ns lovii-schema.util)
+(ns lovii-schema.util
+  (:require [clojure.set]))
 
 (defn- all-variants
   [schema]

@@ -34,14 +34,12 @@
            (= t :uuid))
       (java.util.UUID/fromString value)
 
-          ;; FIXME: hacky coercion method for dates
       (and (string? value)
            (= t :date))
       (->> value
            (f/parse date-formatter)
            c/to-date)
 
-          ;; FIXME: hacky coercion method for dates
       (and (string? value)
            (= t :date-time))
       (->> value

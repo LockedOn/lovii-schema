@@ -1,8 +1,10 @@
 (ns lovii-schema.data
-  (:require [lovii-schema.util :refer [flatten-schema back-ref? forward-ref]])
-  (:import [java.text SimpleDateFormat]
-           [java.time Instant]
-           [java.util Date]))
+  (:require [lovii-schema.util :refer [flatten-schema back-ref? forward-ref]]
+            [clj-time.format :as f]
+            [clj-time.coerce :as c]))
+
+(def date-formatter (f/formatter "yyyy-MM-dd"))
+(def date-time-formatter (f/formatter "yyyy-MM-dd'T'HH:mm:ss.SSSZ"))
 
 (declare clean-data-flat)
 
@@ -35,19 +37,16 @@
           ;; FIXME: hacky coercion method for dates
       (and (string? value)
            (= t :date))
-      (.parse
-       (SimpleDateFormat. "yyyy-mm-dd")
-       value)
+      (->> value
+           (f/parse date-formatter)
+           c/to-date)
 
           ;; FIXME: hacky coercion method for dates
       (and (string? value)
            (= t :date-time))
-      (try
-        (Date/from (Instant/parse value))
-        (catch Exception _
-          (.parse
-           (SimpleDateFormat. "yyyy-mm-dd")
-           value)))
+      (->> value
+           (f/parse date-time-formatter)
+           c/to-date)
 
       (and (= (type value) java.util.Date)
            (#{:date :date-time} t))

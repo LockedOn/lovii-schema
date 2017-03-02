@@ -5,6 +5,7 @@
 
 (def date-formatter (f/formatter "yyyy-MM-dd"))
 (def date-time-formatter (f/formatter "yyyy-MM-dd'T'HH:mm:ss.SSSZ"))
+(def date-time-formatter2 (f/formatter "yyyy-MM-dd'T'HH:mm:ssZ"))
 
 (declare clean-data-flat)
 
@@ -42,9 +43,13 @@
 
       (and (string? value)
            (= t :date-time))
-      (->> value
-           (f/parse date-time-formatter)
-           c/to-date)
+      (try (->> value
+               (f/parse date-time-formatter)
+               c/to-date)
+        (catch Exception e 
+          (->> value
+               (f/parse date-time-formatter2)
+               c/to-date)))
 
       (and (= (type value) java.util.Date)
            (#{:date :date-time} t))

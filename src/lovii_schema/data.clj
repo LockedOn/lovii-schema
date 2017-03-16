@@ -1,11 +1,16 @@
 (ns lovii-schema.data
   (:require [lovii-schema.util :refer [flatten-schema back-ref? forward-ref]]
-            [clj-time.format :as f]
-            [clj-time.coerce :as c]))
+            [clojure.edn]))
 
-(def date-formatter (f/formatter "yyyy-MM-dd"))
-(def date-time-formatter (f/formatter "yyyy-MM-dd'T'HH:mm:ss.SSSZ"))
-(def date-time-formatter2 (f/formatter "yyyy-MM-dd'T'HH:mm:ssZ"))
+(defn parse-inst 
+  [attr value]
+  (let [v (when (string? value)
+            (clojure.edn/read-string (str "#inst " (prn-str value))))]
+    (if (inst? v)
+       v 
+       (throw (ex-info (str "Not a valid inst: " attr " - " value)
+                      {:attr attr
+                       :value value})))))
 
 (declare clean-data-flat)
 
@@ -37,19 +42,11 @@
 
       (and (string? value)
            (= t :date))
-      (->> value
-           (f/parse date-formatter)
-           c/to-date)
+      (parse-inst attr value)
 
       (and (string? value)
            (= t :date-time))
-      (try (->> value
-               (f/parse date-time-formatter)
-               c/to-date)
-        (catch Exception e 
-          (->> value
-               (f/parse date-time-formatter2)
-               c/to-date)))
+      (parse-inst attr value)
 
       (and (= (type value) java.util.Date)
            (#{:date :date-time} t))

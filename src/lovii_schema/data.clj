@@ -5,7 +5,7 @@
 (defn parse-inst 
   [attr value]
   (let [v (when (string? value)
-            (clojure.edn/read-string (str "#inst " (prn-str value))))]
+            (clojure.edn/read-string (str "#inst " (pr-str value))))]
     (if (inst? v)
        v 
        (throw (ex-info (str "Not a valid inst: " attr " - " value)

@@ -16,13 +16,12 @@
   [m n]
   (update-in m
              [:schema/variant :required]
-             (fn [requireds]
-               (map (fn [r]
-                      (into (empty r)
-                            (map (fn [v]
-                                   (keyword (name n) (name v)))
-                                 r)))
-                    requireds))))
+             (fn [x]
+              (clojure.walk/postwalk 
+                #(if (keyword? %)
+                  (add-namespace % n)
+                  %)
+                x))))
 
 (defn expand-abstract-requireds [m n]
   (assoc-in m

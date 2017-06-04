@@ -2,9 +2,16 @@
   (:require [lovii-schema.util :refer [flatten-schema]]))
 
 (defn- datomic-base
-  [tempid install-alter-options]
-  {:db/id (tempid :db.part/db)
-   :db.install/_attribute :db.part/db})
+  [tempid m install-alter-options]
+  (let [install-key (cond  
+                      (and (:db.alter m)
+                           (= install-alter-options :alter))
+                      :db.alter/_attribute
+
+                      :else
+                      :db.install/_attribute)] 
+    {:db/id (tempid :db.part/db)
+     install-key :db.part/db}))
 
 (defn- datomic-enum-values
   [flat-schema tempid]
@@ -95,7 +102,7 @@
    (let [flat-schema (flatten-schema raw-schema)
          db (map (fn [[k v]]
                    (let [m (schema->datomic-types (assoc v :attribute k) type-map)]
-                     (-> (datomic-base tempid install-alter-options)
+                     (-> (datomic-base tempid m install-alter-options)
                          (datomic-doc m)
                          (datomic-type m)
                          (datomic-index m)

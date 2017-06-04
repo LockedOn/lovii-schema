@@ -15,7 +15,7 @@
     (d/delete-database uri)
     (d/create-database uri)
     (let [conn (d/connect uri)
-          schema-data (lodatomic/schema schema d/tempid)]
+          schema-data (lodatomic/schema schema d/tempid {} true)]
       {:conn conn
        :schema-data schema-data
        :tx @(d/transact conn schema-data)})))
@@ -72,7 +72,7 @@
                              :default-value :enumns/one
                              :cardinality :one}}])))
   (testing "Datomic Schema"
-    (is (= (lodatomic/schema lo-schema (countdown))
+    (is (= (lodatomic/schema lo-schema (countdown) {} true)
            [{:db/index false
              :db/valueType :db.type/ref
              :db/noHistory false

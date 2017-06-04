@@ -2,7 +2,7 @@
   (:require [lovii-schema.util :refer [flatten-schema]]))
 
 (defn- datomic-base
-  [tempid]
+  [tempid install-alter-options]
   {:db/id (tempid :db.part/db)
    :db.install/_attribute :db.part/db})
 
@@ -91,14 +91,11 @@
        (assoc d :db/valueType)))
 
 (defn schema
-  ([raw-schema tempid]
-   (schema raw-schema tempid {}))
-
-  ([raw-schema tempid type-map]
+   [raw-schema tempid type-map install-alter-options]
    (let [flat-schema (flatten-schema raw-schema)
          db (map (fn [[k v]]
                    (let [m (schema->datomic-types (assoc v :attribute k) type-map)]
-                     (-> (datomic-base tempid)
+                     (-> (datomic-base tempid install-alter-options)
                          (datomic-doc m)
                          (datomic-type m)
                          (datomic-index m)
@@ -109,7 +106,7 @@
                          (datomic-cadinality m)
                          (datomic-ident m)))) flat-schema)
          idents (datomic-enum-values flat-schema tempid)]
-     (vec (concat db idents)))))
+     (vec (concat db idents))))
 
 (declare data->datoms-flat)
 

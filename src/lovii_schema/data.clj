@@ -18,7 +18,9 @@
   [flat-schema attr value]
   (let [descriptor (get flat-schema attr)
         t (:type descriptor)]
-    (cond ;; allow backref's
+    (cond 
+
+      ;; allow backref's
       (and (back-ref? attr)
            (-> (get flat-schema (forward-ref attr)) :type (= :ref)))
       (let [[v1 v2] (cond (vector? value)
@@ -71,6 +73,10 @@
       (contains? #{:string :string-large :edn :boolean :long :int :bigint :double :decimal :bigdec :float :uuid :keyword} t)
       value
 
+      ;; nil value to be turned into retractions
+      (nil? value)
+      value
+
       (nil? descriptor)
       (throw (ex-info (str "Attribute not present in schema: " attr)
                       {:attr attr}))
@@ -85,9 +91,7 @@
   [flat-schema data]
   (reduce (fn [res [attr value]]
             (let [value (clean-value flat-schema attr value)]
-              (if (some? value)
-                (assoc res attr value)
-                res)))
+              (assoc res attr value)))
           {}
           data))
 

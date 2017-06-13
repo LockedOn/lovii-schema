@@ -30,12 +30,10 @@
                           (-> value seq first))]
         (-> (clean-data-flat flat-schema {(keyword v1) v2}) seq first))
 
-
       (and (back-ref? attr)
            (-> (get flat-schema (forward-ref attr)) :type (= :ref) not))
       (throw (ex-info (str "Back-ref not present in schema as a forward ref: " attr)
                       {:attr attr}))
-
 
       (and (= (:cardinality descriptor :has-many))
            (vector? value))

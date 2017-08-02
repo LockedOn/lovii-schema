@@ -142,7 +142,7 @@
           :else
           [value []])))
 
-(defn- data->datoms-flat
+(defn data->datoms-flat
   [flat-schema tempid data base type-map]
   (if (vector? data)
     (mapv #(data->datoms-flat flat-schema tempid % base type-map) data)

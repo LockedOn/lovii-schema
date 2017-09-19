@@ -84,7 +84,8 @@
 
       (nil? descriptor)
       (throw (ex-info (str "Attribute not present in schema: " attr)
-                      {:attr attr}))
+                      {:attr attr
+                       :value value}))
 
       :else
       (throw (ex-info (str "Unhandled clean value case: " attr)

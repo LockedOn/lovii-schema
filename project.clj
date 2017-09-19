@@ -1,9 +1,9 @@
-(defproject lockedon/lovii-schema "0.3.8"
+(defproject lockedon/lovii-schema "0.3.9"
   :description "Describe your application schema using data."
   :url "https://github.com/LockedOn/lovii-schema"
   :license {:name "MIT"
             :url "https://opensource.org/licenses/MIT"}
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0-alpha13"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0-beta1"]
                                   [cheshire "5.5.0"]
                                   [prismatic/schema "1.1.3"]
                                   [clj-time "0.13.0"]

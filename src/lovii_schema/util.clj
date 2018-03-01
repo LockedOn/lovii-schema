@@ -1,6 +1,10 @@
 (ns lovii-schema.util
   (:require [clojure.set]))
 
+(defn concat-eager
+  [& colls]
+  (seq (reduce into [] colls)))
+
 (defn- all-variants
   [schema]
   (reduce (fn [res m]

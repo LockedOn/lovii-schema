@@ -1,15 +1,15 @@
 (ns lovii-schema.datomic
-  (:require [lovii-schema.util :refer [flatten-schema]]))
+  (:require [lovii-schema.util :refer [flatten-schema concat-eager]]))
 
 (defn- datomic-base
   [tempid m install-alter-options]
-  (let [install-key (cond  
+  (let [install-key (cond
                       (and (:db.alter m)
                            (= install-alter-options :alter))
                       :db.alter/_attribute
 
                       :else
-                      :db.install/_attribute)] 
+                      :db.install/_attribute)]
     {:db/id (tempid :db.part/db)
      install-key :db.part/db}))
 
@@ -19,7 +19,7 @@
        (reduce (fn [res [k v]]
                  (if (and (= :enum (:type v))
                           (map? (:values v)))
-                   (concat res (keys (:values v)))
+                   (concat-eager res (keys (:values v)))
                    res))
                [])
        (mapv (fn [k]
@@ -98,22 +98,22 @@
        (assoc d :db/valueType)))
 
 (defn schema
-   [raw-schema tempid type-map install-alter-options]
-   (let [flat-schema (flatten-schema raw-schema)
-         db (map (fn [[k v]]
-                   (let [m (schema->datomic-types (assoc v :attribute k) type-map)]
-                     (-> (datomic-base tempid m install-alter-options)
-                         (datomic-doc m)
-                         (datomic-type m)
-                         (datomic-index m)
-                         (datomic-fulltext m)
-                         (datomic-isComponent m)
-                         (datomic-noHistory m)
-                         (datomic-unique m)
-                         (datomic-cadinality m)
-                         (datomic-ident m)))) flat-schema)
-         idents (datomic-enum-values flat-schema tempid)]
-     (vec (concat db idents))))
+  [raw-schema tempid type-map install-alter-options]
+  (let [flat-schema (flatten-schema raw-schema)
+        db (map (fn [[k v]]
+                  (let [m (schema->datomic-types (assoc v :attribute k) type-map)]
+                    (-> (datomic-base tempid m install-alter-options)
+                        (datomic-doc m)
+                        (datomic-type m)
+                        (datomic-index m)
+                        (datomic-fulltext m)
+                        (datomic-isComponent m)
+                        (datomic-noHistory m)
+                        (datomic-unique m)
+                        (datomic-cadinality m)
+                        (datomic-ident m)))) flat-schema)
+        idents (datomic-enum-values flat-schema tempid)]
+    (vec (concat-eager db idents))))
 
 (declare data->datoms-flat)
 
@@ -128,10 +128,10 @@
                (mapv #(datom-values flat-schema tempid attr % parent-id type-map))
                (reduce (fn [[res parts] [v* more-parts]]
                          [(if (some? v*)
-                            (vec (concat res [v*]))
+                            (vec (concat-eager res [v*]))
                             res)
                           (if more-parts
-                            (concat parts more-parts)
+                            (concat-eager parts more-parts)
                             parts)])
                        [nil []]))
 
@@ -153,14 +153,14 @@
                                          (assoc res a v*)
                                          res)
                                        (if more-parts
-                                         (concat m-parts more-parts)
+                                         (concat-eager m-parts more-parts)
                                          m-parts)]))
                                   [{} []] data)]
       (-> base
           (assoc :db/id parent-id)
           (merge cleaned)
           (vector)
-          (concat parts)
+          (concat-eager parts)
           (vec)))))
 
 (defn data->datoms
